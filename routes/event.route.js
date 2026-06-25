@@ -9,6 +9,31 @@ let db;
     db = await connectDB();
 })();
 
+Router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await db.collection('events').findOne({ _id: new ObjectId(id) });
+
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: event,
+            message: 'Event fetched successfully'
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: `Failed to fetch event: ${err.message}`
+        });
+    }
+});
+
 Router.get('/', async (req, res) => {
     try {
         const data = await db.collection('events').find({}).toArray();
