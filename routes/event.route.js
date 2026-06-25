@@ -1,11 +1,16 @@
 const { connectDB } = require('../database/main');
-const { ObjectId } = require('mongodb'); // Added ObjectId import
+const { ObjectId } = require('mongodb');
 
 const Router = require('express').Router();
 
+let db;
+
+(async () => {
+    db = await connectDB();
+})();
+
 Router.get('/', async (req, res) => {
     try {
-        const db = await connectDB();
         const data = await db.collection('events').find({}).toArray();
         res.status(200).send({
             success: true,
@@ -33,7 +38,6 @@ Router.post('/', async (req, res) => {
     } = req.body;
 
     try {
-        const db = await connectDB();
         const result = await db.collection('events').insertOne({ // Fixed evets → events
             title,
             description,
@@ -69,19 +73,8 @@ Router.post('/', async (req, res) => {
 
 Router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const {
-        title,
-        description,
-        location,
-        type,
-        date_time,
-        cover_image,
-        register_type,
-    } = req.body;
 
     try {
-        const db = await connectDB();
-
         // Validate required ID
         if (!id) {
             return res.status(400).json({
@@ -90,19 +83,18 @@ Router.put('/:id', async (req, res) => {
             });
         }
 
-        const result = await db.collection('events').findOneAndUpdate( // Fixed evets → events
+        const updates = {};
+        if (req.body.title !== undefined) updates.title = req.body.title;
+        if (req.body.description !== undefined) updates.description = req.body.description;
+        if (req.body.location !== undefined) updates.location = req.body.location;
+        if (req.body.type !== undefined) updates.type = req.body.type;
+        if (req.body.date_time !== undefined) updates.date_time = req.body.date_time;
+        if (req.body.cover_image !== undefined) updates.cover_image = req.body.cover_image;
+        if (req.body.register_type !== undefined) updates.register_type = req.body.register_type;
+
+        const result = await db.collection('events').findOneAndUpdate(
             { _id: new ObjectId(id) },
-            {
-                $set: {
-                    title,
-                    description,
-                    location,
-                    type,
-                    date_time,
-                    cover_image,
-                    register_type,
-                }
-            },
+            { $set: updates },
             { returnDocument: 'after' }
         );
 
@@ -140,8 +132,6 @@ Router.delete('/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
-        const db = await connectDB();
-
         // Validate required ID
         if (!id) {
             return res.status(400).json({
